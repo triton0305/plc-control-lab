@@ -1,8 +1,6 @@
 # PLC Control Lab
 
-LS ELECTRIC **XG5000**을 활용한 PLC 래더 로직(Ladder Logic) 제어 프로젝트 저장소입니다.
-
-산업 자동화 설비의 기본 제어 원리를 학습하고, 모터 운전 시퀀스, 자기유지, 타이머, 인터록(Interlock), 고장 래치, 수동 복구 및 최초 고장 원인 기록 기능을 래더 다이어그램(Ladder Diagram, LD)으로 구현합니다.
+LS ELECTRIC **XG5000**에서 하나의 모터 제어 로직을 기본 운전부터 고장 정지·복구, 최초 고장 원인 진단까지 단계적으로 확장한 프로젝트입니다.
 
 ## 개발 환경
 
@@ -14,37 +12,24 @@ LS ELECTRIC **XG5000**을 활용한 PLC 래더 로직(Ladder Logic) 제어 프�
 | 프로그래밍 언어 | Ladder Diagram (LD) |
 | 운영체제 | Windows |
 
-본 저장소의 PLC 프로그램은 **XG-SIM 시뮬레이션 환경**을 기반으로 개발하고 검증합니다.
+## 제어 로직 발전 과정
 
-## 프로젝트 목록
+### 1단계 · [Motor Control](motor-control/)
 
-| 프로젝트 | 주요 구현 내용 |
-|---|---|
-| [Motor Control](motor-control/) | START/STOP, 자기유지, READY 5초·RUN 10초 타이머, 상승 에지 검출, 인터록 기반 운전 제어 |
-| [Error Latch & Manual Reset](error-reset/) | 고장 래치, 조건부 수동 RESET, 복구 후 재시작 방지, RUN 상태와 MOTOR 출력 분리 |
-| [First-out Fault Recording](first-out/) | 최초 고장 원인 구분, 후속 고장 시 기록 유지, 동시 고장 우선순위, 조건부 일괄 RESET |
+START/STOP 제어에 자기유지를 적용하고, 정상 조건이 5초간 연속 유지되어 `READY`가 되면 `START` 상승 에지로 운전을 시작하도록 구성했습니다. 운전은 10초 후 자동 정지하며, `STOP`을 누르거나 도어·비상정지(E-Stop)·센서 인터록(Interlock)의 운전 허가 조건을 벗어나면 정지합니다.
 
-## 저장소 구조
+### 2단계 · [Error Latch & Reset](error-reset/)
 
-```text
-plc-control-lab/
-├── README.md
-├── .gitignore
-├── motor-control/
-│   ├── README.md
-│   ├── src/
-│   │   └── motor-control.xgwx
-│   └── images/
-├── error-reset/
-│   ├── README.md
-│   ├── src/
-│   │   └── error-reset.xgwx
-│   └── images/
-└── first-out/
-    ├── README.md
-    ├── src/
-    │   └── first-out.xgwx
-    └── images/
-```
+기본 운전 로직에 고장 래치와 조건부 수동 `RESET`을 추가했습니다. 고장 원인을 해소해도 `ERROR`를 유지하며, 운전 허가 조건이 모두 정상이고 `START`가 해제된 상태에서 `RESET`을 새로 눌러야 해제됩니다. 복구 후에는 정상 조건을 다시 5초간 유지한 뒤 새 `START` 입력이 있어야 운전합니다.
 
-각 프로젝트 디렉터리에는 XG5000 프로젝트 원본, 래더 회로 및 시뮬레이션 화면, 구현 기능과 동작 설명을 정리합니다.
+### 3단계 · [First-out Fault Recording](first-out/)
+
+고장 정지와 수동 복구 로직에 최초 고장 원인 기록을 추가했습니다. 후속 고장이 발생해도 최초 원인을 유지합니다. 최초 기록이 비어 있고 같은 PLC 스캔에서 여러 고장을 검출하면 **E-Stop → 도어 → 센서** 순으로 하나를 기록합니다. 유효한 `RESET`으로 `ERROR`와 최초 고장 기록을 함께 해제합니다.
+
+각 단계 폴더에는 상세 README, XG5000 프로젝트 원본(`src/`), 래더 회로 및 시뮬레이션 화면(`images/`)을 정리했습니다.
+
+## 최종 구현 및 검증 결과
+
+최종 래더는 운전 상태(`RUN`)와 모터 출력 명령(`MOTOR`)을 분리합니다. **XG-SIM**에서 고장 시 두 신호의 차단, 후속 고장에도 최초 기록 유지, 같은 스캔의 고장 우선순위, 복구 조건 미충족 시 `RESET` 거부, 유효한 `RESET` 후 모터 정지를 유지한 상태에서 `READY`로 복귀하는 동작을 확인했습니다.
+
+[최종 단계 XG-SIM 검증 결과 17개 항목](first-out/README.md#6-xg-sim-검증-결과)
